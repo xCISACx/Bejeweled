@@ -21,12 +21,13 @@ public class Board : MonoBehaviour
     public Gem CurrentGem;
     public Gem TargetGem;
 
-    private List<Gem> GemsToMark = new List<Gem>();
+    public List<Gem> GemsToMark = new List<Gem>();
     
     // Start is called before the first frame update
     void Start()
     {
         Generate();
+        GemsToMark.Clear();
     }
 
     // Update is called once per frame
@@ -61,7 +62,7 @@ public class Board : MonoBehaviour
                     {
                         SwapGems(CurrentGem, TargetGem);
                         
-                        if (CheckForMatch(CurrentGem) || CheckForMatch(TargetGem))
+                        if (CheckForMatch(CurrentGem, true) || CheckForMatch(TargetGem, true))
                         {
                             ResetSelectedGems();
                             Debug.Log("matched");
@@ -107,21 +108,51 @@ public class Board : MonoBehaviour
     {
         Gems = new Gem[Width, Height];
         
+        do
+        {
+            // Generate gems on the board
+            for (int i = 0; i < Width; i++)
+            {
+                for (int j = 0; j < Height; j++)
+                {
+                    var position = new Vector2(i * Offset, j * Offset);
+                    
+                    // Check if there's an existing gem at this position and destroy it
+                    if (Gems[i, j] != null)
+                    {
+                        Destroy(Gems[i, j].gameObject);
+                    }
+                    
+                    var randomIndex = Random.Range(0, GemPrefabs.Length);
+                    var newGem = Instantiate(GemPrefabs[randomIndex], position, Quaternion.identity);
+                    newGem.GetComponent<Gem>().Coordinates = new Vector2(i, j);
+                    newGem.transform.parent = transform;
+                    newGem.name = "(" + i + ", " + j + ") " + newGem.name;
+                    Gems[i, j] = newGem.GetComponent<Gem>();
+                }
+            }
+        }
+        while (DoesBoardHaveMatches());
+    }
+
+    private bool DoesBoardHaveMatches()
+    {
+        // Check for matches on the entire board
         for (int i = 0; i < Width; i++)
         {
             for (int j = 0; j < Height; j++)
             {
-                var position = new Vector2(i * Offset, j * Offset);
-                var randomIndex = Random.Range(0, GemPrefabs.Length);
-                var newGem = Instantiate(GemPrefabs[randomIndex], position, Quaternion.identity);
-                newGem.GetComponent<Gem>().Coordinates = new Vector2(i, j);
-                newGem.transform.parent = transform;
-                newGem.name = "(" + i + ", " + j + ") " + newGem.name;
-                Gems[i, j] = newGem.GetComponent<Gem>();
+                if (CheckForMatch(Gems[i, j], false))
+                {
+                    return true;
+                }
             }
         }
+        
+        return false;
     }
-    private bool CheckForMatch(Gem gem)
+
+    private bool CheckForMatch(Gem gem, bool mark)
     {
         // Check for a straight-line match with a minimum of 3 adjacent gems
         int horizontalMatches = 1 + CountAdjacentGems(gem, Vector2.right) + CountAdjacentGems(gem, Vector2.left);
@@ -132,11 +163,11 @@ public class Board : MonoBehaviour
         Debug.Log((horizontalMatches >= MinimumMatches) + " | " + (verticalMatches >= MinimumMatches));
         
         // If there is a match, mark all the gems
-        if (isMatch)
+        if (isMatch && mark)
         {
             MarkGemsInSequence(GemsToMark);
             
-            GemsToMark.Clear();
+            DestroyMatchedGems();
         }
 
         return isMatch;
@@ -153,6 +184,19 @@ public class Board : MonoBehaviour
                 gemToMark.IsMatched = true;
             }
         }
+    }
+    
+    private void DestroyMatchedGems()
+    {
+        foreach (var gem in GemsToMark)
+        {
+            gem.IsMatched = false;
+            Gems[(int) gem.Coordinates.x, (int) gem.Coordinates.y] = null;
+            Destroy(gem.gameObject);
+        }
+
+        GemsToMark.Clear();
+        HandleFallingGems();
     }
 
     private int CountAdjacentGems(Gem gem, Vector2 dir)
@@ -200,6 +244,42 @@ public class Board : MonoBehaviour
         Vector2 tempPosition = GemA.transform.position;
         GemA.transform.position = GemB.transform.position;
         GemB.transform.position = tempPosition;
+    }
+    
+    // Handle falling gems after matched gems are destroyed
+    private void HandleFallingGems()
+    {
+        for (int i = 0; i < Width; i++)
+        {
+            for (int j = 0; j < Height - 1; j++)
+            {
+                if (Gems[i, j] == null)
+                {
+                    // Find the first gem above the empty slot
+                    int k = j + 1;
+                    while (k < Height && Gems[i, k] == null)
+                    {
+                        k++;
+                    }
+
+                    // If a gem is found, move it down to the empty slot
+                    if (k < Height && Gems[i, k] != null)
+                    {
+                        Gems[i, j] = Gems[i, k];
+                        Gems[i, j].Coordinates = new Vector2(i, j);
+                        Gems[i, k] = null;
+                    }
+                    
+                    // Update the gem positions
+                    Vector2 newPosition = new Vector2(i * Offset, j * Offset);
+                    if (Gems[i, j])
+                    {
+                        Gems[i, j].transform.position = newPosition;
+                    }
+                    
+                }
+            }
+        }
     }
     
     bool IsInsideBoard(Vector2 coords)
