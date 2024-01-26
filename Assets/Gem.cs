@@ -18,6 +18,7 @@ public class Gem : MonoBehaviour
     public Vector2 Coordinates;
     public Vector2 TargetCoordinates;
     public bool IsMatched;
+    public string DefaultName;
     
     // Start is called before the first frame update
     void Start()
@@ -36,5 +37,10 @@ public class Gem : MonoBehaviour
         {
             GetComponent<SpriteRenderer>().color = Color.white;
         }
+    }
+
+    public void UpdateEditorName()
+    {
+        gameObject.name = "(" + Coordinates.x + ", " + Coordinates.y + ") " + DefaultName;
     }
 }
