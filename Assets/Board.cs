@@ -14,6 +14,8 @@ public class Board : MonoBehaviour
     public int Height = 8;
     public float Offset = 1.5f;
     public float GemFallDuration = 0.5f;
+    public float BoardRefillDelay = 0.5f;
+    public float GemDestructionDelay = 0.2f;
     
     private Gem[,] Gems;
     
@@ -27,9 +29,7 @@ public class Board : MonoBehaviour
     private bool isSwappingBack = false;
 
     public List<Gem> GemsToMark = new List<Gem>();
-    //public List<Gem> VerticalMatches = new List<Gem>();
-    //public List<Gem> HorizontalMatches = new List<Gem>();
-    
+
     public GemArrayWrapper GemArrayWrapper;
     
     public void InitializeGemsArray()
@@ -254,63 +254,21 @@ public class Board : MonoBehaviour
                 gemToMark.IsMatched = true;
             }
         }
-        
-        //MarkGemsInList(VerticalMatches);
-        //MarkGemsInList(HorizontalMatches);
-
-        //VerticalMatches.Clear();
-        //HorizontalMatches.Clear();
     }
 
-    private void MarkGemsInList(List<Gem> gemList)
-    {
-        int sequenceLength = gemList.Count;
-
-        if (sequenceLength >= MinimumMatches)
-        {
-            foreach (var gemToMark in gemList)
-            {
-                gemToMark.IsMatched = true;
-            }
-        }
-    }
-    
-    /*private void MarkGemsInSequence(List<Gem> gemSequence)
-    {
-        int sequenceLength = gemSequence.Count;
-
-        if (sequenceLength >= MinimumMatches)
-        {
-            foreach (var gemToMark in gemSequence)
-            {
-                gemToMark.IsMatched = true;
-            }
-        }
-    }*/
-    
     private void DestroyMatchedGems()
     {
-        int comboCount = 0;
-        
         foreach (var gem in GemsToMark)
         {
             gem.IsMatched = false;
             Gems[(int) gem.Coordinates.x, (int) gem.Coordinates.y] = null;
-            Destroy(gem.gameObject);
+            Destroy(gem.gameObject, GemDestructionDelay);
             UpdateGemArray();
-            
-            comboCount++;
         }
 
         GemsToMark.Clear();
-        
-        // Check if a combo was detected
-        if (comboCount > 1)
-        {
-            Debug.Log("Combo x" + comboCount);
-        }
-        
-        HandleFallingGems();
+
+        Invoke(nameof(HandleFallingGems), GemDestructionDelay);
         UpdateGemArray();
     }
 
@@ -383,18 +341,7 @@ public class Board : MonoBehaviour
         yield return new WaitForSeconds(delayInSeconds);
         isSwappingBack = false;
     }
-    
-    IEnumerator SwapGemsAfterDelay(Gem gemA, Gem gemB, float delayInSeconds)
-    {
-        yield return new WaitForSeconds(delayInSeconds);
-        
-        gemA.IsMatched = false;
-        gemB.IsMatched = false;
 
-        SwapGems(gemB, gemA);
-        ResetSelectedGems();
-    }
-    
     // Handle falling gems after matched gems are destroyed
     private void HandleFallingGems()
     {
@@ -435,9 +382,9 @@ public class Board : MonoBehaviour
             }
         }
 
-        StartCoroutine(RefillBoardAfterDelay(0.5f));
+        StartCoroutine(RefillBoardAfterDelay(BoardRefillDelay));
     }
-    
+
     private IEnumerator MoveGemDown(Gem gem, int targetRow)
     {
         float elapsedTime = 0f;
@@ -507,6 +454,8 @@ public class Board : MonoBehaviour
                 CheckForMatch(Gems[i, j], true);
             }
         }
+        
+        GemsToMark.Clear();
     }
 
     bool IsInsideBoard(Vector2 coords)
