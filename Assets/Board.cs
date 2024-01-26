@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,6 +6,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngineInternal;
+using Random = UnityEngine.Random;
 
 public class Board : MonoBehaviour
 {
@@ -21,8 +23,8 @@ public class Board : MonoBehaviour
     
     public Gem CurrentGem;
     public Gem TargetGem;
-    private Coroutine swapCoroutine;
-    private bool isSwapCoroutineRunning = false;
+    
+    private bool isSwappingBack = false;
 
     public List<Gem> GemsToMark = new List<Gem>();
     //public List<Gem> VerticalMatches = new List<Gem>();
@@ -103,11 +105,7 @@ public class Board : MonoBehaviour
                     }
                     else
                     {
-                        if (!isSwapCoroutineRunning)  // Check if the coroutine is not already running
-                        {
-                            StartCoroutine(SwapGemsAfterDelay(TargetGem, CurrentGem, 0.0f));
-                            isSwapCoroutineRunning = true;  // Set the flag to indicate that the coroutine is running
-                        }
+                        SwapGems(CurrentGem, TargetGem);
                     }
                 }
             }
@@ -335,6 +333,12 @@ public class Board : MonoBehaviour
         return adjacent;
     }
 
+    private void SwapGemsInvoke()
+    {
+        SwapGems(TargetGem, CurrentGem);
+        ResetSelectedGems();
+    }
+
     private void SwapGems(Gem GemA, Gem GemB)
     {
         Vector2 tempCoordinates = GemA.Coordinates;
@@ -358,26 +362,36 @@ public class Board : MonoBehaviour
         }
         else
         {
-            swapCoroutine = StartCoroutine(SwapGemsAfterDelay(TargetGem, CurrentGem, 0.5f));
-            Debug.Log("illegal move, swapping back");
+            if (!isSwappingBack)
+            {
+                isSwappingBack = true;
+                Invoke(nameof(SwapGemsInvoke), 0.5f);
+                Debug.Log("illegal move, swapping back");
+            }
+            else
+            {
+                // Reset the flag only after the delay
+                StartCoroutine(ResetSwapFlagAfterDelay(0.5f));
+            }
         }
         
         UpdateGemArray();
     }
     
+    private IEnumerator ResetSwapFlagAfterDelay(float delayInSeconds)
+    {
+        yield return new WaitForSeconds(delayInSeconds);
+        isSwappingBack = false;
+    }
+    
     IEnumerator SwapGemsAfterDelay(Gem gemA, Gem gemB, float delayInSeconds)
     {
         yield return new WaitForSeconds(delayInSeconds);
-
+        
         gemA.IsMatched = false;
         gemB.IsMatched = false;
 
         SwapGems(gemB, gemA);
-
-        // Reset the coroutine reference and flag
-        swapCoroutine = null;
-        isSwapCoroutineRunning = false;
-        
         ResetSelectedGems();
     }
     
