@@ -16,7 +16,6 @@ public class Gem : MonoBehaviour
     };
     public GemType Type;
     public Vector2 Coordinates;
-    public Vector2 TargetCoordinates;
     public bool IsMatched;
     public string DefaultName;
     

@@ -223,6 +223,9 @@ MonoBehaviour:
   Width: 8
   Height: 8
   Offset: 1.3
+  GemFallDuration: 0.5
+  BoardRefillDelay: 0.5
+  GemDestructionDelay: 0.5
   GemPrefabs:
   - {fileID: 117691815514666511, guid: 0d0cbfb1f4884a541945dcb41868eb82, type: 3}
   - {fileID: 117691815514666511, guid: b702bcc4866619640b07bc6f882fbb75, type: 3}
@@ -233,6 +236,7 @@ MonoBehaviour:
   MinimumMatches: 3
   CurrentGem: {fileID: 0}
   TargetGem: {fileID: 0}
+  GemsToMark: []
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
