@@ -12,7 +12,7 @@ public class Board : MonoBehaviour
 {
     public int Width = 8;
     public int Height = 8;
-    public float Offset = 1.5f;
+    public float Offset = 1.3f;
     public float GemFallDuration = 0.5f;
     public float BoardRefillDelay = 0.5f;
     public float GemDestructionDelay = 0.2f;
